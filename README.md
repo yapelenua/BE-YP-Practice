@@ -6,7 +6,7 @@
 2. Install dependencies
 3. Set up environment variables based on EnvSchema
 4. Run migrations with command npm run db:migration:run
-5. Run docker-compose with command npm run local:end
+5. Run docker-compose with command npm run local:env
 6. Start the server with command npm run local
 7. To open drizzle.studio use command npm run db:migration:studio
 
