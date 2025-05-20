@@ -1,13 +1,11 @@
  
 import 'src/services/env/env.service';
-import fastify, { FastifyInstance, FastifyLoggerOptions } from 'fastify';
+import fastify from 'fastify';
 import autoload from '@fastify/autoload';
 import path from 'path';
-import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { getUUIDService } from 'src/services/uuid/uuid.service';
 import { errorHandler } from './errors/error.handler';
-import fastifySwagger from '@fastify/swagger';
-import fastifySwaggerUI from '@fastify/swagger-ui';
 import crypto from 'crypto';
 import { getRepos } from 'src/repos';
 import helmet from '@fastify/helmet';
@@ -17,90 +15,9 @@ import requestId from './plugins/request-id.plugin';
 import responseTime from './plugins/response-time.plugin';
 import healthCheck from './plugins/health-check.plugin';
 import routePrinter from './plugins/route-printer.plugin';
-import { EErrorCodes, getErrorCodesDescription } from './errors/EErrorCodes';
-import { fastifyBasicAuth } from '@fastify/basic-auth';
+import { setupSwagger } from './plugins/swagger.plugin';
+import { getLoggerOptions } from './plugins/logger.plugin';
 import { getDb, dbHealthCheck } from 'src/services/drizzle/drizzle.service';
-
-function getLoggerOptions(): FastifyLoggerOptions {
-  const localPrintOpts = {
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        translateTime: 'HH:MM:ss.l Z',
-        ignore: 'pid,hostname'
-      }
-    }
-  };
-
-  const opts: FastifyLoggerOptions & {redact: string[]} = {
-    level: 'trace',
-    redact: ['req.headers.authorization', 'req.headers["impersonate-authorization"]'],
-    serializers: {
-      req (request) {
-        return {
-          ip: request.ip,
-          method: request.method,
-          url: request.url,
-          path: request.routeOptions.url,
-          query: request.query,
-          parameters: request.params,
-          headers: request.headers
-        };
-      }
-    }
-  };
-
-  return process.env.NODE_ENV === 'local' ? { ...localPrintOpts, ...opts } : opts;
-}
-
-async function setupSwagger(server: FastifyInstance, userName: string, pwd: string) {
-  await server.register(fastifyBasicAuth, {
-    validate(u, p, _req, _reply, done) {
-      if (u === userName && pwd === p) {
-        done();
-      } else {
-        done(new Error('Unauthorized'));
-      }
-    },
-    authenticate: true
-  });
-  await server.register(fastifySwagger, {
-    openapi: {
-      info: {
-        title: 'fastify-boilerplate',
-        description: 'fastify-boilerplate',
-        version: '1.0.0'
-      },
-      servers: [],
-      security: [{ auth: [] }],
-      components: {
-        securitySchemes: {
-          auth: {
-            description: 'Authorization header token, sample: "Bearer {TOKEN}"',
-            type: 'apiKey',
-            name: 'authorization',
-            in: 'header'
-          }
-        },
-        schemas: {
-          ErrorCodes: {
-            type: 'integer',
-            enum: Object.values(EErrorCodes).filter((value) => typeof value === 'number'),
-            description: getErrorCodesDescription()
-          }
-        }
-      }
-    },
-    transform: jsonSchemaTransform
-  });
-  await server.register(fastifySwaggerUI, {
-    routePrefix: '/api/documentation',
-    logLevel: 'silent',
-    uiHooks: {
-      onRequest: server.basicAuth
-    }
-  });
-}
 
 async function run() {
   const server = fastify({
