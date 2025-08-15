@@ -1,9 +1,9 @@
 import { FastifyPluginAsync } from 'fastify';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { GetEntityByIdRespSchema } from 'src/api/routes/schemas/GetEntityByIdRespSchema';
+import { GetEntityByIdRespSchema } from 'src/api/routes/schemas/entity/GetEntityByIdRespSchema';
 import { z } from 'zod';
 import { updateEntityById } from 'src/controllers/entity/update-entity-by-id';
-import { UpdateEntityReqSchema } from '../../schemas/UpdateEntitiesReqSchema';
+import { UpdateEntityReqSchema } from 'src/api/routes/schemas/entity/UpdateEntitiesReqSchema';
 
 const routes: FastifyPluginAsync = async function (f) {
   const fastify = f.withTypeProvider<ZodTypeProvider>();
